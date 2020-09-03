@@ -1,0 +1,91 @@
+#
+# Function Name : featureImp_cat_Target
+# Description   : Measures the significance value of binomial categorical target variable. Performs t-test
+#                 between a numberical independent variable with categoriacal target variable and 
+#                 chi-square test between a categorical independent variable and categorical target variable.
+# Input parameters: 
+#   data       - input data Dataframe
+#   num_var    - numberical variable vector
+#   fact_var   - factor variable vector
+#   targetVar  - target variable
+#   conf.level - significance
+# Returns : A dataframe of test results
+# Limitations : The target variable should be a binary variable.
+##############################################################################################
+#
+# Function name : plot_data
+# Description   : Plots histograms and box plot for numberical data, plots bar graph and pie chart for 
+#                 categorical columns for the input data provided
+# Input parameters :
+#   data     - Input data fram.
+#   num_var  - column names that are numerical
+#   fact_var - column names that are categorical
+##############################################################################################
+# Function name : create_unique_dir
+# Description : creates a unique directory, if the input directory is already present, it appends the directory
+#               with an incremetal number unitl a directory that is not already present is created.
+# Input parameter:
+#   dir_location - location in which the directory is created.
+#   dir_name     - name of the directory to be created
+##############################################################################################
+#
+# Function name : plot_data_png_Files
+# Description   : Plots histograms and box plot for numberical data, plots bar graph and pie chart for 
+#                 categorical columns for the input data provided and saves them as .png files
+# Input parameters :
+#   data     - Input data fram.
+#   num_var  - column names that are numerical
+#   fact_var - column names that are categorical
+#   png_dir  - directory in which the files are to be stored
+##############################################################################################
+#
+# Function name : plot_data_pdf_file
+# Description   : Plots histograms and box plot for numberical data, plots bar graph and pie chart for 
+#                 categorical columns for the input data provided and saves them in a single pdf file.
+# Input parameters :
+#   data     - Input data fram.
+#   num_var  - column names that are numerical
+#   fact_var - column names that are categorical
+#   png_dir  - directory in which the files are to be stored
+##############################################################################################
+#
+# Function name : get_factor_attributes
+# Description   : gets the attribute names for which the dataframe column is factor 
+##############################################################################################
+#
+# Function name : get_not_factor_attributes
+# Description   : gets the attribute names for which the dataframe column is not factor 
+##############################################################################################
+#
+# Function Name : transform_data_to_factor_based_on_proportions
+# Description :
+# Input Parameters:
+#     minprop - if the proportion of unique elements is less that 0.01(default) then that column is converted to 
+#               factor variable
+#     data    - input data
+##############################################################################################
+#
+# Function name : univariate_plots
+# Description name : Generates appropriate univariate plots for a given data
+# Input parameter :
+#     data : Data for which the univariate plots are to be generated, dataframe
+#     minProp : Min proportion of uniqure values in an attribute, below which the column is transformed to 
+#               factor. (Default = 0.01)
+#     outputType : dis - display the plots, pdf - pdf format of the plots, png - png format of the plots
+#                 Default - dis
+#     dir_loc : Location in which the png and pdf's are to be stored. Default - current working directory    
+#     tranformData : Can contain True or False. Transforms the data as per minPorp if True. Default is False.
+##############################################################################################
+#
+# Function Name : featureImp_cat_Target_gen
+# Description :
+# Input parameters: 
+#   data       - input data Dataframe
+#   targetVar  - target variable
+#   conf.level - significance
+#   minProp : Min proportion of uniqure values in an attribute, below which the column is transformed to 
+#               factor. (Default = 0.01)
+#   tranformData : Can contain True or False. Transforms the data as per minPorp if True. Default is False.
+# Returns : A dataframe of test results
+# Limitations : The target variable should be a binary variable.
+##############################################################################################
