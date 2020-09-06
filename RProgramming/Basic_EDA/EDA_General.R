@@ -1,8 +1,9 @@
 library(RColorBrewer)
 
 # Function Name : featureImp_cat_Target
-# Description   : Measures the significance value of binomial categorical target variable. Performs t-test
-#                 between a numberical independent variable with categoriacal target variable and 
+# Description   : Measures the significance value of categorical target variable. Performs t-test
+#                 between a numberical independent variable with binary categoriacal target variable and 
+#                 performs annova test for multiclass target variable.
 #                 chi-square test between a categorical independent variable and categorical target variable.
 # Input parameters: 
 #   data       - input data Dataframe
@@ -14,43 +15,76 @@ library(RColorBrewer)
 # Limitations : The target variable should be a binary variable.
 
 featureImp_cat_Target <- function(data, num_var, fact_var, targetVar, conf.level = 0.05){
-  cat("\n Feature importance between a numerical independent variable and binary categorical variable \n \n")
-  targetFactors = unlist(unique(fram_data[targetVar]))
-  if(length(targetFactors)> 2 || length(targetFactors) == 1){
-    stop("The target variable does not have binary factors")
+  cat("\n Feature importance between a numerical independent variable and target categorical variable \n \n")
+  targetFactors = unlist(unique(data[targetVar]))
+  if(length(targetFactors) == 1){
+    stop("Something creepy with the target variable. The categorical variable has only one category")
   }
   
-  pvalues = c()
-  for(i in 1 : length(num_var)) {
-    attributeName = num_var[i]
-    pval = t.test( data[attributeName][data[targetVar] == targetFactors[[1]]], 
-                   data[attributeName][data[targetVar] == targetFactors[[2]]],
-                   conf.level = conf.level)['p.value'][1]
-    pval = as.numeric(pval)
-    pvalues[i] = pval
-  }
-  tTestResult <- data.frame( columnName = num_var,
-                             p_value = pvalues)
-  print(tTestResult)
-  tTestResult['Test'] = 't-student'
-  cat("\n t-test- Alternate Hypothesis :- Means are not same \n \n \n")
-  cat("Feature importance between categorical independent variable and categorical target variable \n \n")
+  num_var_len =length(num_var)
+  fact_var_len = length(fact_var)
   
-  pvalues = c()
-  for (i in 1 :length(fact_var)){
-    attributeName = fact_var[i]
-    pval = chisq.test(data[[attributeName]],data[[targetVar]])['p.value']
-    pval = as.numeric(pval)
-    pvalues[i] = pval
+  if (num_var_len != 0) {
+    if(length(targetFactors) ==  2) {
+      pvalues = c()
+      for(i in 1 : num_var_len) {
+        attributeName = num_var[i]
+        pval = t.test( data[attributeName][data[targetVar] == 0], 
+                       data[attributeName][data[targetVar] == 1],
+                       conf.level = conf.level)['p.value'][1]
+        pval = as.numeric(pval)
+        pvalues[i] = pval
+      }
+      tTestResult <- data.frame( columnName = num_var, p_value = pvalues )
+      
+      print(tTestResult)
+      tTestResult['Test'] = 't-student'
+      cat("\n t-test- Alternate Hypothesis :- Means are not same \n \n \n")
+      cat("Feature importance between numerical independent variable and categorical target variable \n \n")  
+    }
+    
+    if(length(targetFactors) > 2) {
+      pvalues = c()
+      for(i in 1 : num_var_len) {
+        attributeName = num_var[i]
+    
+        t = aov(data[[attributeName]] ~ data[[targetVar]])
+        pval = summary(t)[[1]][["Pr(>F)"]][1]
+        
+        pval = as.numeric(pval)
+        pvalues[i] = pval
+      }
+      tTestResult <- data.frame( columnName = num_var, p_value = pvalues )
+      
+      print(tTestResult)
+      tTestResult['Test'] = 'ANNOVA'
+      cat("\n ANNOVA - Alternate Hypothesis :- Means are not same \n \n \n")
+      cat("Feature importance between numerical independent variable and categorical target variable \n \n")  
+    }
   }
-  ChiTestResult <- data.frame( columnName = fact_var,
-                               p_value = pvalues)
-  print(ChiTestResult)
-  ChiTestResult['Test'] = 'chi-squared'
-  cat("ChiSquare-test- Alternate Hypothesis :- Variables are Independent")
   
-  finalResult <- rbind(tTestResult,ChiTestResult)
-  return (finalResult)
+  if (fact_var_len != 0){
+    pvalues = c()
+    for (i in 1 :fact_var_len){
+      attributeName = fact_var[i]
+      pval = chisq.test(data[[attributeName]],data[[targetVar]])['p.value']
+      pval = as.numeric(pval)
+      pvalues[i] = pval
+    }
+    ChiTestResult <- data.frame( columnName = fact_var, p_value = pvalues)
+    
+    print(ChiTestResult)
+    ChiTestResult['Test'] = 'chi-squared'
+    cat("ChiSquare-test- Alternate Hypothesis :- Variables are Independent")
+  }
+  
+  if(fact_var_len == 0 ){
+    return (tTestResult)
+  }else if(num_var_len == 0){
+    return (ChiTestResult)
+  }else{
+    return (rbind(tTestResult,ChiTestResult))
+  }
 }
 
 
@@ -296,7 +330,7 @@ univariate_plots <- function(data, outputType='dis', minPorp = 0.01, dir_loc = g
 #               factor. (Default = 0.01)
 #   tranformData : Can contain True or False. Transforms the data as per minPorp if True. Default is False.
 # Returns : A dataframe of test results
-# Limitations : The target variable should be a binary variable.
+#
 featureImp_cat_Target_gen <- function(data, targetVar, conf.level = 0.05, 
                                       tranformData=FALSE, minPorp=0.01){
   if(tranformData){
@@ -312,8 +346,116 @@ featureImp_cat_Target_gen <- function(data, targetVar, conf.level = 0.05,
   print(fact_var)
   return (featureImp_cat_Target(transformedData, num_var, fact_var, targetVar, conf.level))
 }
-
 ##############################################################################################
+
+
+# Function Name : missing_value_imputation
+# Description :
+# Input parameters: 
+#   data       - input data Dataframe
+#   imputer    - simple or KNN
+#   minProp : Min proportion of uniqure values in an attribute, below which the column is transformed to 
+#               factor. (Default = 0.01)
+#   tranformData : Can contain True or False. Transforms the data as per minPorp if True. Default is False.
+# Returns : A dataframe of transformed  Data with no missing values
+#
+
+missing_value_imputation = function(data, imputer = 'simple', tranformData = FALSE, minPorp = 0.01) {
+  
+  if(tranformData){
+    transformedData =  transform_data_to_factor_based_on_proportions(data, minPorp)
+  } else{
+    transformedData = data 
+  }
+  
+  fact_var = get_factor_attributes(transformedData)
+  num_var = get_not_factor_attributes(transformedData)
+  
+  if( imputer == 'simple' ){
+    
+    print("Variables missing value count before imputation \n")
+    print(missing_value_count(transformedData))
+    
+    # Imputing numerical columns
+    for(i in num_var) {
+      transformedData[,i][is.na(transformedData[,i])] = median(transformedData[,i][!is.na(transformedData[,i])])
+    }
+    
+    # Imputing categorical variables :
+    for(i in fact_var){
+      x = transformedData[i][!is.na(transformedData[i])]
+      mode = names(table(x))[table(x)==max(table(x))]
+      transformedData[,i][is.na(transformedData[,i])] = mode
+      #transformedData[,i][is.na(transformedData[,i])] = mode(transformedData[,i][!is.na(transformedData[,i])])
+    }
+    
+  }else if(imputer == 'KNN'){
+    library(VIM)
+    new_df = kNN(transformedData)
+    transformedData = new_df[,1:ncol(data)] # Removing Duplicated True/False columns of all var.
+  }
+  
+  print('Missing value count after imputation: \n')
+  print(missing_value_count(transformedData))
+  return (transformedData)
+}
+
+missing_value_count = function(data) {
+  
+  var_missing_count = c()
+  for( i in 1:length(data)) {
+    var_missing_count[i] = sum(is.na(data[,i]))
+  }
+  var_missing_count =  data.frame(names(data),var_missing_count)
+  return (var_missing_count)
+}
+
+
+
+
+##############################################################################################################
+##############################################################################################################
+##############################################################################################################
+##############################################################################################################
+##############################################################################################################
+##############################################################################################################
+##############################################################################################################
+##############################################################################################################
+################################    TESTING    ###############################################################
+
+# Loading Data
+fram_data = read.csv("C:\\Users\\91809\\Desktop\\Praxis\\MachineLearning\\4_Data\\framingham.csv")
+iris_data = read.csv('iris.csv')
+iris_data = iris_data[,2:ncol(iris_data)]
+
+
+# Functionalities
+# 1) Transform Data such that it classified the numerical variables and factor variables.
+# 2) Plots the univariate graphs such that default will display the plots, png
+#will store the plots as png in a given location, and pdf will help us store the images as pdf format
+univariate_plots(fram_data, tranformData=TRUE, minPorp=0.005)
+univariate_plots(fram_data, 'png',tranformData=TRUE, minPorp=0.005)
+univariate_plots(fram_data, 'pdf',tranformData=TRUE, minPorp=0.005)
+
+
+#Functionalities
+# 1) Provided feature dependencies on categorical target variables.
+# 2) Between numerical features and binary target variables - T-test is performed
+#    Between numerical features and multiclass target variables - Annova test is performed
+#    Between categorical features and categorical variables - ChiSquared test is performed
+res = featureImp_cat_Target_gen(fram_data,'TenYearCHD', tranformData=TRUE)
+t = featureImp_cat_Target_gen(iris_data, 'Species')
+
+
+
+# Functionalities
+# Performs Simple Imputation (median and mode) and KNN imputation
+# Returns a separate dataframe and does not modify the existing dataframe.
+temp_data = missing_value_imputation(fram_data, 'simple', tranformData = TRUE, minPorp = 0.005)
+sum(is.na(temp_data))
+
+temp_data = missing_value_imputation(fram_data, 'KNN', tranformData = TRUE, minPorp = 0.005)
+sum(is.na(temp_data))
 
 
 
